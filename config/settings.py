@@ -75,6 +75,10 @@ class Settings:
         # Gmail SMTP fallback
         self.gmail_email = self.get("GMAIL_EMAIL")
         self.gmail_app_password = self.get("GMAIL_APP_PASSWORD")
+        
+        # Google Search API
+        self.google_search_api_key = self.get("GOOGLE_SEARCH_API_KEY")
+        self.google_search_cse_id = self.get("GOOGLE_SEARCH_CSE_ID")
     
     def _init_crm_config(self):
         """Initialize CRM configurations"""
@@ -193,6 +197,9 @@ class Settings:
         
         if all([self.zoom_client_id, self.zoom_client_secret, self.zoom_account_id]):
             configured.append("zoom")
+        
+        if self.google_search_api_key and self.google_search_cse_id:
+            configured.append("google_search")
         
         return configured
     

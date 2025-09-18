@@ -10,7 +10,7 @@ A comprehensive Model Context Protocol (MCP) server providing essential sales to
 - **📱 9 Production-Ready Tools** - Enterprise-grade integrations across all sales functions
 - **🔧 MCP Compatible** - All tools use proper MCP schema definitions
 
-## 🛠️ Supported Tools (9/9 Configured)
+## 🛠️ Supported Tools (10/10 Configured)
 
 ### 💰 Payment Processing
 - **✅ Stripe** - Complete payment ecosystem (customers, subscriptions, invoices, products, refunds)
@@ -23,6 +23,9 @@ A comprehensive Model Context Protocol (MCP) server providing essential sales to
 ### 💬 Communication
 - **✅ Gmail** - Email sending and management
 - **✅ Twilio** - SMS and WhatsApp messaging
+
+### 🔍 Search & Research
+- **✅ Google Search** - Web search with advanced filtering (images, news, site-specific, filetype)
 
 ### 📊 CRM & Sales Management
 - **✅ HubSpot** - Contacts, deals, companies management  
@@ -76,6 +79,10 @@ python -m mcp_server
 # === Core Configuration ===
 GOOGLE_CREDENTIALS_PATH=credentials.json
 GOOGLE_TOKEN_PATH=token.json
+
+# === Google Search API ===
+GOOGLE_SEARCH_API_KEY=your_google_search_api_key
+GOOGLE_SEARCH_CSE_ID=your_custom_search_engine_id
 
 # === AI Integration ===
 THETA_API_KEY=your_theta_api_key_here
@@ -491,6 +498,28 @@ For issues and questions:
 - **Slack**: Create bot app, get bot token or webhook URL
 - **Zoom**: Create JWT app, get API key/secret
 
+### Google Search API Setup
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable **Custom Search API**
+4. Create API credentials (API Key)
+5. Create a **Custom Search Engine** at [Google CSE](https://cse.google.com/)
+6. Get your **Search Engine ID** (CSE ID)
+7. Configure environment variables:
+   ```bash
+   GOOGLE_SEARCH_API_KEY=your_api_key_here
+   GOOGLE_SEARCH_CSE_ID=your_search_engine_id_here
+   ```
+
+#### Google Search Tool Features
+- **Web Search**: General web search with customizable results count
+- **Image Search**: Search for images with size and type filters
+- **News Search**: Search news articles with time period filters
+- **Site Search**: Search within specific websites
+- **Filetype Search**: Search for specific document types (PDF, DOC, etc.)
+- **Advanced Filtering**: Language, country, safe search options
+- **Rich Results**: Formatted results with metadata and snippets
+
 ## 📊 Usage Examples
 
 ### Basic Tool Usage
@@ -553,6 +582,93 @@ async def mcp_example():
     })
     
     return result
+```
+
+### Google Search Tool Usage
+```python
+# Example: Comprehensive search operations
+import asyncio
+from tools.google_search_tool import GoogleSearchTool
+
+async def search_examples():
+    search_tool = GoogleSearchTool()
+    await search_tool.initialize(settings)
+    
+    # 1. Basic web search
+    web_result = await search_tool.execute("search", {
+        "query": "artificial intelligence trends 2024",
+        "num_results": 5,
+        "language": "en",
+        "country": "us"
+    })
+    
+    # 2. News search with time filter
+    news_result = await search_tool.execute("search_news", {
+        "query": "technology startups",
+        "num_results": 10,
+        "time_period": "w1",  # Past week
+        "sort_by": "date"
+    })
+    
+    # 3. Site-specific search
+    site_result = await search_tool.execute("search_site", {
+        "query": "machine learning",
+        "site": "github.com",
+        "num_results": 5
+    })
+    
+    # 4. Image search
+    image_result = await search_tool.execute("search_images", {
+        "query": "data visualization charts",
+        "num_results": 8,
+        "image_size": "large",
+        "image_type": "photo"
+    })
+    
+    # 5. Document search
+    doc_result = await search_tool.execute("search_filetype", {
+        "query": "sales presentation template",
+        "filetype": "pdf",
+        "num_results": 5
+    })
+    
+    return web_result, news_result, site_result, image_result, doc_result
+
+# Run examples
+results = asyncio.run(search_examples())
+```
+
+### MCP Google Search Integration
+```python
+# Example: Using Google Search with MCP client
+async def mcp_search_example():
+    client = mcp_client.Client("sales-mcp-server")
+    
+    # Market research search
+    market_research = await client.call_tool("google_search", {
+        "action": "search",
+        "query": "B2B SaaS market trends 2024",
+        "num_results": 10,
+        "safe_search": "medium"
+    })
+    
+    # Competitor analysis
+    competitor_docs = await client.call_tool("google_search", {
+        "action": "search_filetype",
+        "query": "competitor analysis template",
+        "filetype": "xlsx",
+        "num_results": 5
+    })
+    
+    # News monitoring
+    industry_news = await client.call_tool("google_search", {
+        "action": "search_news",
+        "query": "sales automation software",
+        "time_period": "d1",  # Past day
+        "num_results": 15
+    })
+    
+    return market_research, competitor_docs, industry_news
 ```
 
 ## 🔄 Workflow Examples

@@ -20,6 +20,10 @@
     "email": "your-email@gmail.com",
     "app_password": "your-app-password"
   },
+  "google_search": {
+    "api_key": "your-google-search-api-key",
+    "cse_id": "your-custom-search-engine-id"
+  },
   "hubspot": {
     "access_token": "your-hubspot-access-token",
     "api_key": "your-hubspot-api-key"

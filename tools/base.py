@@ -97,6 +97,7 @@ class SalesToolRegistry:
         from .gmail_tool import GmailTool
         from .google_drive_tool import GoogleDriveTool
         from .google_sheets_tool import GoogleSheetsTool
+        from .google_search_tool import GoogleSearchTool
         from .twilio_tool import TwilioTool
         from .hubspot_tool import HubSpotTool
         from .stripe_tool import StripeTool
@@ -108,6 +109,7 @@ class SalesToolRegistry:
             GmailTool,
             GoogleDriveTool,
             GoogleSheetsTool,
+            GoogleSearchTool,
             TwilioTool,
             HubSpotTool,
             StripeTool

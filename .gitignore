@@ -40,7 +40,7 @@ credentials.json
 *.swp
 *.swo
 *~
-
+mcp_config.json
 # OS
 .DS_Store
 .DS_Store?

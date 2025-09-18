@@ -746,20 +746,16 @@ def create_app():
     return app
 
 if __name__ == '__main__':
-    # Cloud Run injects the PORT environment variable. Default to 8080 if not set.
-    # The host must be 0.0.0.0 for Cloud Run to route traffic to your application.
-    CLOUD_RUN_PORT = int(os.environ.get("PORT", 8080))
-    CLOUD_RUN_HOST = "0.0.0.0"
-
+    # Initialize the MCP server
     async def startup():
         success = await init_server()
         if not success:
             logger.error("Failed to initialize MCP server. Flask app will still run but with limited functionality.")
         
-        # Start Flask app using the Cloud Run specified port and host
-        logger.info(f"Starting Flask web app on http://{CLOUD_RUN_HOST}:{CLOUD_RUN_PORT}")
-        app.run(debug=False, host=CLOUD_RUN_HOST, port=CLOUD_RUN_PORT) # Set debug=False for production
-
-    # Run the startup function (using asyncio.run for async setup)
+        # Start Flask app
+        logger.info("Starting Flask web app on http://127.0.0.1:5000")
+        app.run(debug=True, host='127.0.0.1', port=5000)
+    
+    # Run the startup
     asyncio.run(startup())
 

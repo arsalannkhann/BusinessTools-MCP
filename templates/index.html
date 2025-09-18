@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales MCP Server - Test Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online { background-color: #4caf50; }
+        .status-offline { background-color: #f44336; }
+        .status-warning { background-color: #ff9800; }
+
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background: #5a67d8;
+        }
+
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .button.secondary {
+            background: #6c757d;
+        }
+
+        .button.secondary:hover {
+            background: #5a6268;
+        }
+
+        .button.success {
+            background: #28a745;
+        }
+
+        .button.success:hover {
+            background: #218838;
+        }
+
+        .tool-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .tool-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .tool-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .tool-info h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .tool-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .test-results {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-pass { color: #28a745; }
+        .result-fail { color: #dc3545; }
+        .result-skip { color: #6c757d; }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .log-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal.show {
+            display: block;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: #667eea;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input[type="tel"] {
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .form-group input:invalid {
+            border-color: #dc3545;
+        }
+
+        .form-group input:invalid:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group .form-help {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .execution-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .execution-result.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .execution-result.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sales MCP Server</h1>
+            <p class="subtitle">Test Dashboard & Management Interface</p>
+        </header>
+
+        <div class="dashboard">
+            <!-- Server Status Card -->
+            <div class="card">
+                <h2>Server Status</h2>
+                <div id="server-status">
+                    <div class="loading show">
+                        <div class="spinner"></div>
+                        <p>Loading server status...</p>
+                    </div>
+                </div>
+                <button class="button" onclick="refreshStatus()">Refresh Status</button>
+            </div>
+
+            <!-- Authentication Status Card -->
+            <div class="card">
+                <h2>Authentication</h2>
+                <div id="auth-status">
+                    <div class="loading show">
+                        <div class="spinner"></div>
+                        <p>Checking authentication...</p>
+                    </div>
+                </div>
+                <button class="button secondary" onclick="checkAuth()">Check Auth</button>
+            </div>
+
+            <!-- Tools Overview Card -->
+            <div class="card">
+                <h2>Available Tools</h2>
+                <div id="tools-list">
+                    <div class="loading show">
+                        <div class="spinner"></div>
+                        <p>Loading tools...</p>
+                    </div>
+                </div>
+                <button class="button" onclick="loadTools()">Refresh Tools</button>
+            </div>
+
+            <!-- Test Runner Card -->
+            <div class="card">
+                <h2>System Tests</h2>
+                <p>Run comprehensive tests on all server components</p>
+                <button class="button success" onclick="runAllTests()" id="test-button">Run All Tests</button>
+                <div id="test-results" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Log Output -->
+        <div class="card">
+            <h2>System Log</h2>
+            <div id="log-output" class="log-output">
+                Welcome to Sales MCP Server Test Dashboard
+                ==========================================
+                
+                This dashboard allows you to:
+                • Monitor server status and health
+                • Check authentication status with Google services
+                • View available tools and their configuration
+                • Run comprehensive system tests
+                • Execute tool functions with custom parameters
+                • Monitor real-time logs and output
+                
+                Click "Refresh Status" to begin testing...
+            </div>
+            <button class="button secondary" onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <!-- Tool Execution Modal -->
+        <div id="toolModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle" class="modal-title">Execute Tool</h2>
+                    <button class="close" onclick="closeToolModal()">&times;</button>
+                </div>
+                <div id="modalBody">
+                    <!-- Dynamic form will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Utility functions
+        function log(message) {
+            const logOutput = document.getElementById('log-output');
+            const timestamp = new Date().toISOString();
+            logOutput.textContent += `\n[${timestamp}] ${message}`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearLog() {
+            const logOutput = document.getElementById('log-output');
+            logOutput.textContent = 'Log cleared.\n';
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '<div class="loading show"><div class="spinner"></div><p>Loading...</p></div>';
+        }
+
+        function hideLoading(elementId) {
+            const loading = document.getElementById(elementId).querySelector('.loading');
+            if (loading) loading.remove();
+        }
+
+        // API calls
+        async function refreshStatus() {
+            log('Refreshing server status...');
+            showLoading('server-status');
+            
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                let statusHtml = '';
+                if (response.ok) {
+                    const statusClass = data.status === 'running' ? 'status-online' : 'status-offline';
+                    statusHtml = `
+                        <p><span class="status-indicator ${statusClass}"></span><strong>Status:</strong> ${data.status}</p>
+                        <p><strong>Tools:</strong> ${data.tools_count} registered</p>
+                        <p><strong>Google Auth:</strong> ${data.google_auth ? '✅ Authenticated' : '❌ Not authenticated'}</p>
+                        <p><strong>Last Updated:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                    `;
+                    log(`Server status: ${data.status}, ${data.tools_count} tools registered`);
+                } else {
+                    statusHtml = `<p><span class="status-indicator status-offline"></span><strong>Error:</strong> ${data.message}</p>`;
+                    log(`Error getting server status: ${data.message}`);
+                }
+                
+                document.getElementById('server-status').innerHTML = statusHtml;
+            } catch (error) {
+                log(`Error refreshing status: ${error.message}`);
+                document.getElementById('server-status').innerHTML = 
+                    `<p><span class="status-indicator status-offline"></span><strong>Error:</strong> ${error.message}</p>`;
+            }
+        }
+
+        async function checkAuth() {
+            log('Checking authentication status...');
+            showLoading('auth-status');
+            
+            try {
+                const response = await fetch('/api/auth/status');
+                const data = await response.json();
+                
+                let authHtml = '';
+                if (response.ok) {
+                    const statusClass = data.authenticated ? 'status-online' : 'status-offline';
+                    authHtml = `
+                        <p><span class="status-indicator ${statusClass}"></span><strong>Status:</strong> ${data.authenticated ? 'Authenticated' : 'Not Authenticated'}</p>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                    `;
+                    log(`Auth status: ${data.authenticated ? 'authenticated' : 'not authenticated'}`);
+                } else {
+                    authHtml = `<p><span class="status-indicator status-offline"></span><strong>Error:</strong> ${data.error}</p>`;
+                    log(`Error checking auth: ${data.error}`);
+                }
+                
+                document.getElementById('auth-status').innerHTML = authHtml;
+            } catch (error) {
+                log(`Error checking authentication: ${error.message}`);
+                document.getElementById('auth-status').innerHTML = 
+                    `<p><span class="status-indicator status-offline"></span><strong>Error:</strong> ${error.message}</p>`;
+            }
+        }
+
+        async function loadTools() {
+            log('Loading tools...');
+            showLoading('tools-list');
+            
+            try {
+                const response = await fetch('/api/tools');
+                const data = await response.json();
+                
+                let toolsHtml = '';
+                if (response.ok && data.tools) {
+                    toolsHtml = '<div class="tool-list">';
+                    data.tools.forEach(tool => {
+                        const statusClass = tool.configured ? 'status-online' : 'status-warning';
+                        const statusText = tool.configured ? 'Configured' : 'Not configured';
+                        toolsHtml += `
+                            <div class="tool-item">
+                                <div class="tool-info">
+                                    <h4>${tool.name}</h4>
+                                    <p>${tool.description || 'No description available'}</p>
+                                    <p><span class="status-indicator ${statusClass}"></span>${statusText}</p>
+                                    ${tool.error ? `<p style="color: #dc3545; font-size: 0.8rem;">Error: ${tool.error}</p>` : ''}
+                                </div>
+                                <div class="tool-actions">
+                                    <button class="button secondary" onclick="testTool('${tool.name}')">Test</button>
+                                    ${tool.configured ? `<button class="button" onclick="openToolModal('${tool.name}')">Execute</button>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    toolsHtml += '</div>';
+                    log(`Loaded ${data.tools.length} tools`);
+                } else {
+                    toolsHtml = `<p>Error loading tools: ${data.error}</p>`;
+                    log(`Error loading tools: ${data.error}`);
+                }
+                
+                document.getElementById('tools-list').innerHTML = toolsHtml;
+            } catch (error) {
+                log(`Error loading tools: ${error.message}`);
+                document.getElementById('tools-list').innerHTML = 
+                    `<p>Error loading tools: ${error.message}</p>`;
+            }
+        }
+
+        async function testTool(toolName) {
+            log(`Testing tool: ${toolName}`);
+            
+            try {
+                const response = await fetch(`/api/test/tool/${toolName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`Tool ${toolName} test completed - Configured: ${data.configured}`);
+                } else {
+                    log(`Tool ${toolName} test failed: ${data.error}`);
+                }
+            } catch (error) {
+                log(`Error testing tool ${toolName}: ${error.message}`);
+            }
+        }
+
+        async function runAllTests() {
+            log('Running comprehensive system tests...');
+            const button = document.getElementById('test-button');
+            const resultsDiv = document.getElementById('test-results');
+            
+            button.disabled = true;
+            button.textContent = 'Running Tests...';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/run-tests');
+                const data = await response.json();
+                
+                let resultsHtml = '<div class="test-results"><h3>Test Results:</h3>';
+                
+                if (response.ok) {
+                    // Server initialization
+                    const serverClass = data.server_init ? 'result-pass' : 'result-fail';
+                    const serverIcon = data.server_init ? '✅' : '❌';
+                    resultsHtml += `<div class="result-item"><span>Server Initialization</span><span class="${serverClass}">${serverIcon} ${data.server_init ? 'PASS' : 'FAIL'}</span></div>`;
+                    
+                    // Google auth
+                    const authClass = data.google_auth ? 'result-pass' : 'result-fail';
+                    const authIcon = data.google_auth ? '✅' : '❌';
+                    resultsHtml += `<div class="result-item"><span>Google Authentication</span><span class="${authClass}">${authIcon} ${data.google_auth ? 'PASS' : 'FAIL'}</span></div>`;
+                    
+                    // Individual tools
+                    if (data.tools) {
+                        Object.entries(data.tools).forEach(([toolName, status]) => {
+                            let toolClass, toolIcon, toolStatus;
+                            if (typeof status === 'boolean') {
+                                toolClass = status ? 'result-pass' : 'result-fail';
+                                toolIcon = status ? '✅' : '❌';
+                                toolStatus = status ? 'PASS' : 'FAIL';
+                            } else {
+                                toolClass = 'result-fail';
+                                toolIcon = '❌';
+                                toolStatus = status;
+                            }
+                            resultsHtml += `<div class="result-item"><span>${toolName} Tool</span><span class="${toolClass}">${toolIcon} ${toolStatus}</span></div>`;
+                        });
+                    }
+                    
+                    resultsHtml += `<p style="margin-top: 1rem;"><strong>Test completed at:</strong> ${new Date(data.timestamp).toLocaleString()}</p>`;
+                    log('All tests completed successfully');
+                } else {
+                    resultsHtml += `<p class="result-fail">❌ Test execution failed: ${data.error}</p>`;
+                    log(`Test execution failed: ${data.error}`);
+                }
+                
+                resultsHtml += '</div>';
+                resultsDiv.innerHTML = resultsHtml;
+                resultsDiv.style.display = 'block';
+                
+            } catch (error) {
+                log(`Error running tests: ${error.message}`);
+                resultsDiv.innerHTML = `<div class="test-results"><p class="result-fail">❌ Error: ${error.message}</p></div>`;
+                resultsDiv.style.display = 'block';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Run All Tests';
+            }
+        }
+
+        // Initialize dashboard on page load
+        window.addEventListener('load', function() {
+            log('Dashboard initialized');
+            refreshStatus();
+            checkAuth();
+            loadTools();
+        });
+
+        // Tool execution modal functions
+        async function openToolModal(toolName) {
+            log(`Opening execution modal for tool: ${toolName}`);
+            
+            try {
+                const response = await fetch(`/api/tools/${toolName}/actions`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    log(`Error loading actions for ${toolName}: ${data.error}`);
+                    return;
+                }
+                
+                document.getElementById('modalTitle').textContent = `Execute ${toolName.replace('_', ' ').toUpperCase()} Tool`;
+                
+                let modalContent = '<div style="margin-bottom: 1rem;">';
+                modalContent += '<label for="actionSelect"><strong>Select Action:</strong></label>';
+                modalContent += '<select id="actionSelect" onchange="updateActionForm()" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem;">';
+                modalContent += '<option value="">Select an action...</option>';
+                
+                data.actions.forEach(action => {
+                    modalContent += `<option value="${action.action}">${action.name}</option>`;
+                });
+                
+                modalContent += '</select>';
+                modalContent += '</div>';
+                modalContent += '<div id="actionDescription" style="margin-bottom: 1rem; color: #666; font-style: italic;"></div>';
+                modalContent += '<form id="toolExecutionForm" style="display: none;">';
+                modalContent += '<div id="parameterFields"></div>';
+                modalContent += '<div style="margin-top: 1rem; display: flex; gap: 0.5rem;">';
+                modalContent += '<button type="submit" class="button">Execute</button>';
+                modalContent += '<button type="button" class="button secondary" onclick="closeToolModal()">Cancel</button>';
+                modalContent += '</div>';
+                modalContent += '</form>';
+                modalContent += '<div id="executionResult"></div>';
+                
+                document.getElementById('modalBody').innerHTML = modalContent;
+                
+                // Store actions data for form generation
+                window.currentToolActions = data.actions;
+                window.currentToolName = toolName;
+                
+                document.getElementById('toolModal').classList.add('show');
+                
+            } catch (error) {
+                log(`Error opening tool modal: ${error.message}`);
+            }
+        }
+
+        function closeToolModal() {
+            document.getElementById('toolModal').classList.remove('show');
+            document.getElementById('modalBody').innerHTML = '';
+        }
+
+        function updateActionForm() {
+            const selectedAction = document.getElementById('actionSelect').value;
+            const form = document.getElementById('toolExecutionForm');
+            const description = document.getElementById('actionDescription');
+            const parameterFields = document.getElementById('parameterFields');
+            
+            if (!selectedAction || !window.currentToolActions) {
+                form.style.display = 'none';
+                description.textContent = '';
+                return;
+            }
+            
+            const action = window.currentToolActions.find(a => a.action === selectedAction);
+            if (!action) return;
+            
+            description.textContent = action.description;
+            
+            let fieldsHtml = '';
+            action.parameters.forEach(param => {
+                fieldsHtml += `
+                    <div class="form-group">
+                        <label for="param_${param.name}">
+                            ${param.name.replace('_', ' ').toUpperCase()}
+                            ${param.required ? ' *' : ' (optional)'}
+                        </label>
+                `;
+                
+                if (param.type === 'textarea') {
+                    fieldsHtml += `<textarea id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''} placeholder="${param.placeholder || ''}"></textarea>`;
+                } else if (param.type === 'email') {
+                    fieldsHtml += `<input type="email" id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''} placeholder="${param.placeholder || ''}"/>`;
+                } else if (param.type === 'tel') {
+                    fieldsHtml += `<input type="tel" id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''} placeholder="${param.placeholder || '+1234567890'}" pattern="[+]?[0-9\\s\\-\\(\\)]*"/>`;
+                } else if (param.type === 'url') {
+                    fieldsHtml += `<input type="url" id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''} placeholder="${param.placeholder || 'https://example.com'}"/>`;
+                } else if (param.type === 'number') {
+                    fieldsHtml += `<input type="number" id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''} placeholder="${param.placeholder || ''}"/>`;
+                } else if (param.type === 'date') {
+                    fieldsHtml += `<input type="date" id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''}/>`;
+                } else if (param.type === 'datetime-local') {
+                    fieldsHtml += `<input type="datetime-local" id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''}/>`;
+                } else if (param.type === 'select') {
+                    fieldsHtml += `<select id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''}>`;
+                    if (!param.required) {
+                        fieldsHtml += `<option value="">-- Select ${param.name.replace('_', ' ')} --</option>`;
+                    }
+                    if (param.options) {
+                        param.options.forEach(option => {
+                            fieldsHtml += `<option value="${option}">${option}</option>`;
+                        });
+                    }
+                    fieldsHtml += `</select>`;
+                } else {
+                    fieldsHtml += `<input type="text" id="param_${param.name}" name="${param.name}" ${param.required ? 'required' : ''} placeholder="${param.placeholder || ''}"/>`;
+                }
+                
+                if (param.description) {
+                    fieldsHtml += `<div class="form-help">${param.description}</div>`;
+                }
+                
+                fieldsHtml += '</div>';
+            });
+            
+            parameterFields.innerHTML = fieldsHtml;
+            form.style.display = 'block';
+            
+            // Add form submit handler
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                executeToolAction(selectedAction);
+            };
+        }
+
+        async function executeToolAction(action) {
+            const formData = new FormData(document.getElementById('toolExecutionForm'));
+            const parameters = {};
+            
+            for (const [key, value] of formData.entries()) {
+                if (value.trim() !== '') {
+                    parameters[key] = value.trim();
+                }
+            }
+            
+            log(`Executing ${window.currentToolName} - ${action} with parameters: ${JSON.stringify(parameters)}`);
+            
+            const resultDiv = document.getElementById('executionResult');
+            resultDiv.innerHTML = '<div style="text-align: center; padding: 1rem;"><div class="spinner"></div><p>Executing...</p></div>';
+            
+            try {
+                const response = await fetch(`/api/execute/tool/${window.currentToolName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        parameters: parameters
+                    })
+                });
+                
+                const data = await response.json();
+                
+                let resultHtml = '<div class="execution-result ';
+                resultHtml += data.success ? 'success' : 'error';
+                resultHtml += '">';
+                resultHtml += `<h4>${data.success ? '✅ Success' : '❌ Error'}</h4>`;
+                
+                if (data.success) {
+                    resultHtml += `<p><strong>Action:</strong> ${data.action}</p>`;
+                    if (data.result) {
+                        if (typeof data.result === 'object') {
+                            resultHtml += `<p><strong>Result:</strong></p><pre style="background: #f8f9fa; padding: 0.5rem; border-radius: 3px; overflow-x: auto;">${JSON.stringify(data.result, null, 2)}</pre>`;
+                        } else {
+                            resultHtml += `<p><strong>Result:</strong> ${data.result}</p>`;
+                        }
+                    }
+                    log(`Tool execution successful: ${window.currentToolName} - ${action}`);
+                } else {
+                    resultHtml += `<p><strong>Error:</strong> ${data.error}</p>`;
+                    log(`Tool execution failed: ${window.currentToolName} - ${action}: ${data.error}`);
+                }
+                
+                resultHtml += `<p><strong>Executed at:</strong> ${new Date(data.execution_time).toLocaleString()}</p>`;
+                resultHtml += '</div>';
+                
+                resultDiv.innerHTML = resultHtml;
+                
+            } catch (error) {
+                log(`Error executing tool: ${error.message}`);
+                resultDiv.innerHTML = `
+                    <div class="execution-result error">
+                        <h4>❌ Execution Error</h4>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('toolModal');
+            if (event.target === modal) {
+                closeToolModal();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+  "server": {
+    "name": "sales-mcp-server",
+    "port": 8000,
+    "log_level": "INFO",
+    "debug": false
+  },
+  "google": {
+    "credentials_path": "credentials.json",
+    "token_path": "token.json",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/drive",
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/gmail.send",
+      "https://www.googleapis.com/auth/gmail.compose"
+    ]
+  },
+  "gmail_smtp": {
+    "email": "your-email@gmail.com",
+    "app_password": "your-app-password"
+  },
+  "hubspot": {
+    "access_token": "your-hubspot-access-token",
+    "api_key": "your-hubspot-api-key"
+  },
+  "salesforce": {
+    "username": "your-salesforce-username",
+    "password": "your-salesforce-password",
+    "security_token": "your-salesforce-security-token",
+    "domain": "login"
+  },
+  "pipedrive": {
+    "api_token": "your-pipedrive-api-token",
+    "domain": "your-company-domain"
+  },
+  "calendly": {
+    "client_id": "your-calendly-client-id",
+    "client_secret": "your-calendly-client-secret",
+    "access_token": "your-calendly-access-token",
+    "refresh_token": "your-calendly-refresh-token",
+    "webhook_secret": "your-calendly-webhook-secret"
+  },
+  "outreach": {
+    "client_id": "your-outreach-client-id",
+    "client_secret": "your-outreach-client-secret",
+    "access_token": "your-outreach-access-token"
+  },
+  "salesloft": {
+    "api_key": "your-salesloft-api-key"
+  },
+  "apollo": {
+    "api_key": "your-apollo-api-key"
+  },
+  "linkedin": {
+    "access_token": "your-linkedin-access-token",
+    "client_id": "your-linkedin-client-id",
+    "client_secret": "your-linkedin-client-secret"
+  },
+  "slack": {
+    "bot_token": "xoxb-your-slack-bot-token",
+    "webhook_url": "https://hooks.slack.com/services/your/webhook/url"
+  },
+  "zoom": {
+    "client_id": "your-zoom-client-id",
+    "client_secret": "your-zoom-client-secret",
+    "account_id": "your-zoom-account-id",
+    "access_token": "your-zoom-access-token"
+  },
+  "rate_limiting": {
+    "enabled": true,
+    "requests": 100,
+    "window": 60
+  }
+}

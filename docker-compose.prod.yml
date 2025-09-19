@@ -1,0 +1,102 @@
+# Production Docker Compose Configuration
+# Includes automatic Google token refresh and monitoring
+
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    container_name: mcp-server-prod
+    
+    environment:
+      # Enable production mode for auto-refresh
+      - ENVIRONMENT=production
+      
+      # Google OAuth paths (mounted volumes)
+      - GOOGLE_CREDENTIALS_PATH=/app/credentials/google_credentials.json
+      - GOOGLE_TOKEN_PATH=/app/tokens/google_token.json
+      
+      # Auto-refresh settings (optional - has defaults)
+      - GOOGLE_REFRESH_INTERVAL=1800  # 30 minutes
+      - GOOGLE_MIN_TOKEN_LIFETIME=300  # 5 minutes
+      
+      # Other API keys (add as needed)
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - HUBSPOT_ACCESS_TOKEN=${HUBSPOT_ACCESS_TOKEN}
+      # Add other credentials from .env file
+    
+    volumes:
+      # Read-only credentials
+      - ./credentials:/app/credentials:ro
+      
+      # Writable token storage (for auto-refresh)
+      - ./token_storage:/app/tokens:rw
+      
+      # Backup storage
+      - ./backups:/app/backups:rw
+      
+      # Logs
+      - ./logs:/app/logs:rw
+    
+    ports:
+      - "8000:8000"
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "python", "health_check.py"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Optional: Monitoring service
+  token-monitor:
+    build: .
+    container_name: mcp-token-monitor
+    
+    environment:
+      - ENVIRONMENT=production
+      - GOOGLE_TOKEN_PATH=/app/tokens/google_token.json
+    
+    volumes:
+      - ./token_storage:/app/tokens:ro
+      - ./logs:/app/logs:rw
+    
+    command: ["python", "-c", "
+      import asyncio, time;
+      from health_check import check_google_token_health;
+      async def monitor():
+        while True:
+          result = await check_google_token_health();
+          print(f'{time.strftime(\"%Y-%m-%d %H:%M:%S\")} - Token Status: {result[\"status\"]} - {result[\"message\"]}');
+          if not result['healthy']: 
+            print('🚨 TOKEN HEALTH ISSUE DETECTED!');
+          await asyncio.sleep(300);  # Check every 5 minutes
+      asyncio.run(monitor())
+    "]
+    
+    restart: unless-stopped
+    
+    depends_on:
+      - mcp-server
+
+# Create required directories
+# mkdir -p credentials token_storage backups logs

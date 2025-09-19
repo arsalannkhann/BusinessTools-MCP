@@ -101,6 +101,9 @@ class SalesToolRegistry:
         from .twilio_tool import TwilioTool
         from .hubspot_tool import HubSpotTool
         from .stripe_tool import StripeTool
+        from .linkedin_sales_navigator_tool import LinkedInSalesNavigatorTool
+        from .apollo_tool import ApolloTool
+        from .outreach_tool import OutreachTool
 
         tool_classes = [
             CalendlyTool,
@@ -112,7 +115,10 @@ class SalesToolRegistry:
             GoogleSearchTool,
             TwilioTool,
             HubSpotTool,
-            StripeTool
+            StripeTool,
+            LinkedInSalesNavigatorTool,
+            ApolloTool,
+            OutreachTool
         ]
 
         initialized_count = 0

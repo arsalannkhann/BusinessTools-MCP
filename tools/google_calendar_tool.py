@@ -1,4 +1,4 @@
-"""Google Calendar integration tool for managing calendar events"""
+"""Googleclass GoogleCalendarTool(SalesTool):Calendar integration tool for managing calendar events"""
 
 import logging
 import datetime
@@ -7,12 +7,13 @@ from typing import Dict, Any, Optional, List
 import mcp.types as types
 from .base import SalesTool, ToolResult, validate_required_params
 
-class GoogleCalendarTool(SalesTool):
+class GoogleCalendarTool(SalesToool):
     """Google Calendar operations"""
     
     def __init__(self):
         super().__init__("google_calendar", "Google Calendar operations for events and scheduling")
         self.calendar_service = None
+        self.google_auth = None
         self.default_calendar_id = "primary"
     
     async def initialize(self, settings, google_auth=None) -> bool:
@@ -22,6 +23,9 @@ class GoogleCalendarTool(SalesTool):
             return False
         
         try:
+            # Store google_auth reference for automatic refresh
+            self.google_auth = google_auth
+            
             self.calendar_service = google_auth.get_service('calendar')
             if not self.calendar_service:
                 self.logger.error("Failed to get Google Calendar service")
@@ -42,10 +46,28 @@ class GoogleCalendarTool(SalesTool):
         """Check if tool is properly configured"""
         return self.calendar_service is not None
     
+    async def _ensure_fresh_service(self):
+        """Ensure service has fresh credentials (for production)"""
+        if self.google_auth:
+            try:
+                # This will refresh credentials if needed
+                await self.google_auth.ensure_valid_credentials()
+                
+                # Get fresh service if credentials were refreshed
+                fresh_service = self.google_auth.get_service('calendar')
+                if fresh_service:
+                    self.calendar_service = fresh_service
+                    
+            except Exception as e:
+                self.logger.warning(f"Could not refresh calendar service: {e}")
+    
     async def execute(self, action: str, params: Dict[str, Any]) -> ToolResult:
         """Execute Google Calendar operations"""
         if not self.is_configured():
             return self._create_error_result("Google Calendar not configured")
+        
+        # Ensure fresh credentials for production
+        await self._ensure_fresh_service()
         
         try:
             if action == "list_calendars":

@@ -1,46 +1,67 @@
 """Shared Google OAuth authentication manager
 Handles authentication for all Google services (Calendar, Drive, Sheets, Gmail, Meet)
+with automatic token refresh for production environments
 """
 
 import os
 import json
 import logging
+import asyncio
+from datetime import datetime, timedelta
 from typing import Optional, List, Any, Dict
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
 class GoogleAuthManager:
-    """Manages Google OAuth authentication for all Google services"""
+    """Manages Google OAuth authentication for all Google services with automatic refresh"""
     
     def __init__(self, settings):
         self.settings = settings
         self.credentials: Optional[Credentials] = None
         self.services: Dict[str, Any] = {}
         self.executor = ThreadPoolExecutor(max_workers=2)
+        self._refresh_task = None
+        self._refresh_interval = 1800  # 30 minutes in seconds
+        self._min_token_lifetime = 300  # 5 minutes in seconds
     
     async def initialize(self):
         """Initialize Google authentication"""
         try:
-            # Load credentials
+            # Load existing credentials
             await self._load_credentials()
             
+            # Try to refresh if needed
+            if self.credentials and self.credentials.expired and self.credentials.refresh_token:
+                try:
+                    await self._refresh_credentials()
+                except Exception as e:
+                    logger.warning(f"Could not refresh credentials: {e}")
+                    self.credentials = None
+            
+            # Check if we have valid credentials
             if not self.credentials or not self.credentials.valid:
-                await self._authenticate()
+                logger.warning("No valid Google credentials available. Google tools will be disabled.")
+                logger.info("To enable Google tools, please run the OAuth setup process separately.")
+                return False
             
             # Build commonly used services
             await self._build_services()
             
+            # Start automatic token refresh monitoring in production
+            if not self._is_development_mode():
+                self._start_background_refresh()
+            
             logger.info("Google authentication initialized successfully")
+            return True
             
         except Exception as e:
-            logger.error(f"Google authentication failed: {e}")
-            raise
+            logger.warning(f"Google authentication failed: {e}. Google tools will be disabled.")
+            return False
     
     async def _load_credentials(self):
         """Load existing credentials from token file"""
@@ -59,6 +80,22 @@ class GoogleAuthManager:
             except Exception as e:
                 logger.warning(f"Could not load existing credentials: {e}")
     
+    async def _refresh_credentials(self):
+        """Refresh expired credentials using refresh token"""
+        if not self.credentials or not self.credentials.refresh_token:
+            raise Exception("No refresh token available")
+        
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            self.executor,
+            self.credentials.refresh,
+            Request()
+        )
+        
+        # Save refreshed credentials
+        await self._save_credentials()
+        logger.info("Successfully refreshed Google credentials")
+
     async def _authenticate(self):
         """Perform OAuth authentication flow"""
         creds_path = self.settings.google_credentials_path
@@ -125,8 +162,9 @@ class GoogleAuthManager:
     
     def _write_credentials_file(self, token_path: str):
         """Synchronous credentials file writing"""
-        with open(token_path, 'w') as token:
-            token.write(self.credentials.to_json())
+        if self.credentials:
+            with open(token_path, 'w') as token:
+                token.write(self.credentials.to_json())
     
     async def _build_services(self):
         """Build Google API service objects"""
@@ -195,8 +233,69 @@ class GoogleAuthManager:
     
     async def cleanup(self):
         """Clean up resources"""
+        # Stop background refresh task
+        if self._refresh_task:
+            self._refresh_task.cancel()
+            try:
+                await self._refresh_task
+            except asyncio.CancelledError:
+                pass
+        
         if self.executor:
             self.executor.shutdown(wait=True)
         
         self.services.clear()
         logger.info("Google auth manager cleaned up")
+    
+    def _is_development_mode(self) -> bool:
+        """Check if running in development mode"""
+        return os.getenv('ENVIRONMENT', '').lower() in ['dev', 'development', 'local']
+    
+    def _start_background_refresh(self):
+        """Start background token refresh monitoring"""
+        if not self._refresh_task:
+            self._refresh_task = asyncio.create_task(self._background_refresh_loop())
+            logger.info("Started automatic token refresh monitoring")
+    
+    async def _background_refresh_loop(self):
+        """Background loop to automatically refresh tokens before expiry"""
+        while True:
+            try:
+                await asyncio.sleep(self._refresh_interval)
+                
+                if self.credentials and self._should_refresh_token():
+                    logger.info("Automatically refreshing Google token before expiry")
+                    await self._refresh_credentials()
+                    
+                    # Rebuild services with new credentials
+                    await self._build_services()
+                    logger.info("Google services rebuilt with refreshed credentials")
+                    
+            except asyncio.CancelledError:
+                logger.info("Background token refresh stopped")
+                break
+            except Exception as e:
+                logger.error(f"Error in background token refresh: {e}")
+                await asyncio.sleep(60)  # Wait a minute before retrying
+    
+    def _should_refresh_token(self) -> bool:
+        """Check if token should be refreshed"""
+        if not self.credentials or not self.credentials.expiry:
+            return False
+        
+        # Refresh if token expires within the minimum lifetime threshold
+        time_until_expiry = self.credentials.expiry - datetime.utcnow()
+        return time_until_expiry.total_seconds() < self._min_token_lifetime
+    
+    async def ensure_valid_credentials(self):
+        """Ensure credentials are valid, refresh if needed (for production API calls)"""
+        if not self.credentials:
+            raise ValueError("No credentials available")
+        
+        if self._should_refresh_token():
+            await self._refresh_credentials()
+            # Rebuild services if needed
+            if not self.services:
+                await self._build_services()
+        
+        return self.credentials.valid

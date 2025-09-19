@@ -4,7 +4,14 @@ Tests for the main MCP server functionality
 
 import pytest
 import asyncio
+import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
+
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 from sales_mcp_server import SalesMCPServer
 
 

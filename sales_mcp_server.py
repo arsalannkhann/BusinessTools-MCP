@@ -7,6 +7,7 @@ A production-ready MCP server providing 15 essential sales tools.
 import asyncio
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional
 import signal
 import sys
@@ -42,10 +43,20 @@ class SalesMCPServer:
         """Initialize server components"""
         try:
             # Initialize Google Auth if configured
-            if self.settings.google_credentials_path:
-                self.google_auth = GoogleAuthManager(self.settings)
-                await self.google_auth.initialize()
-                logger.info("Google Auth initialized successfully")
+            if self.settings.google_credentials_path and os.path.exists(self.settings.google_credentials_path):
+                try:
+                    self.google_auth = GoogleAuthManager(self.settings)
+                    success = await self.google_auth.initialize()
+                    if success:
+                        logger.info("Google Auth initialized successfully")
+                    else:
+                        logger.warning("Google Auth initialization failed - Google tools will be disabled")
+                        self.google_auth = None
+                except Exception as e:
+                    logger.warning(f"Google Auth failed: {e} - Google tools will be disabled")
+                    self.google_auth = None
+            else:
+                logger.info("Google credentials not found - Google tools will be disabled")
             
             # Initialize and register all tools
             await self.tool_registry.initialize_tools(self.settings, self.google_auth)

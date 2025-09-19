@@ -1,0 +1,252 @@
+# Kubernetes Production Deployment
+# kubectl apply -f k8s-deployment.yml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcp-server
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mcp-credentials
+  namespace: mcp-server
+type: Opaque
+data:
+  # Base64 encoded credentials
+  # Create with: kubectl create secret generic mcp-credentials --from-file=google_credentials.json --from-env-file=.env.production -n mcp-server
+  # This will be populated when you run the kubectl create secret command
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-config
+  namespace: mcp-server
+data:
+  ENVIRONMENT: "production"
+  GOOGLE_CREDENTIALS_PATH: "/app/credentials/google_credentials.json"
+  GOOGLE_TOKEN_PATH: "/app/tokens/google_token.json"
+  GOOGLE_REFRESH_INTERVAL: "1800"
+  GOOGLE_MIN_TOKEN_LIFETIME: "300"
+  PORT: "8000"
+  LOG_LEVEL: "INFO"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mcp-token-storage
+  namespace: mcp-server
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+  namespace: mcp-server
+  labels:
+    app: mcp-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+    spec:
+      containers:
+      - name: mcp-server
+        image: mcp-server:latest  # Replace with your Docker image
+        ports:
+        - containerPort: 8000
+        
+        env:
+        # Load from ConfigMap
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: mcp-config
+              key: ENVIRONMENT
+        - name: GOOGLE_CREDENTIALS_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: mcp-config
+              key: GOOGLE_CREDENTIALS_PATH
+        - name: GOOGLE_TOKEN_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: mcp-config
+              key: GOOGLE_TOKEN_PATH
+        - name: GOOGLE_REFRESH_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: mcp-config
+              key: GOOGLE_REFRESH_INTERVAL
+        - name: GOOGLE_MIN_TOKEN_LIFETIME
+          valueFrom:
+            configMapKeyRef:
+              name: mcp-config
+              key: GOOGLE_MIN_TOKEN_LIFETIME
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: mcp-config
+              key: PORT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: mcp-config
+              key: LOG_LEVEL
+        
+        # Load sensitive data from Secret
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: mcp-credentials
+              key: TWILIO_ACCOUNT_SID
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: mcp-credentials
+              key: TWILIO_AUTH_TOKEN
+        - name: HUBSPOT_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: mcp-credentials
+              key: HUBSPOT_ACCESS_TOKEN
+        - name: APOLLO_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mcp-credentials
+              key: APOLLO_API_KEY
+        # Add other secrets as needed
+        
+        volumeMounts:
+        - name: credentials-volume
+          mountPath: /app/credentials
+          readOnly: true
+        - name: token-storage
+          mountPath: /app/tokens
+        - name: logs-volume
+          mountPath: /app/logs
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - health_check.py
+          initialDelaySeconds: 30
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - health_check.py
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 2
+      
+      volumes:
+      - name: credentials-volume
+        secret:
+          secretName: mcp-credentials
+          items:
+          - key: google_credentials.json
+            path: google_credentials.json
+      - name: token-storage
+        persistentVolumeClaim:
+          claimName: mcp-token-storage
+      - name: logs-volume
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-server-service
+  namespace: mcp-server
+spec:
+  selector:
+    app: mcp-server
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mcp-server-ingress
+  namespace: mcp-server
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - yourdomain.com  # Replace with your domain
+    secretName: mcp-server-tls
+  rules:
+  - host: yourdomain.com  # Replace with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-server-service
+            port:
+              number: 80
+
+---
+# Optional: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-server-hpa
+  namespace: mcp-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

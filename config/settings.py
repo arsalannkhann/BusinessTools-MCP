@@ -116,6 +116,7 @@ class Settings:
         self.outreach_client_id = self.get("OUTREACH_CLIENT_ID")
         self.outreach_client_secret = self.get("OUTREACH_CLIENT_SECRET")
         self.outreach_access_token = self.get("OUTREACH_ACCESS_TOKEN")
+        self.outreach_refresh_token = self.get("OUTREACH_REFRESH_TOKEN")
         
         # SalesLoft
         self.salesloft_api_key = self.get("SALESLOFT_API_KEY")

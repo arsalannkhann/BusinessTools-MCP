@@ -1,0 +1,22 @@
+# Additional requirements for Gemini TTS Interface
+# Add these to your existing requirements.txt
+
+# Gemini AI
+google-generativeai>=0.3.0
+
+# Google Cloud Services
+google-cloud-speech>=2.21.0
+google-cloud-texttospeech>=2.16.0
+
+# FastAPI and WebSocket support
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+
+# Audio processing
+pydub>=0.25.1
+soundfile>=0.12.1
+
+# Additional utilities
+python-multipart>=0.0.6
+jinja2>=3.1.2

@@ -1,0 +1,53 @@
+# Multi-service Dockerfile for MCP Server + Gemini TTS Interface
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    ffmpeg \
+    portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements files
+COPY requirements.txt .
+COPY requirements.tts.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements.tts.txt
+
+# Copy application code
+COPY . .
+
+# Create directories for production
+RUN mkdir -p /app/credentials /app/tokens /app/logs /app/backups /app/static /app/templates
+
+# Create non-root user with proper permissions
+RUN useradd -m -u 1000 salesuser && \
+    chown -R salesuser:salesuser /app && \
+    chmod +x /app/start_production.sh && \
+    chmod +x /app/deployment/aws/start_multiservice.sh
+
+USER salesuser
+
+# Expose ports
+EXPOSE 8000 8001
+
+# Health check for both services
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD python health_check.py && curl -f http://localhost:8001/health || exit 1
+
+# Environment variables for production
+ENV ENVIRONMENT=production
+ENV GOOGLE_CREDENTIALS_PATH=/app/credentials/google_credentials.json
+ENV GOOGLE_TOKEN_PATH=/app/tokens/google_token.json
+ENV GOOGLE_REFRESH_INTERVAL=1800
+ENV GOOGLE_MIN_TOKEN_LIFETIME=300
+
+# Use multi-service startup script
+CMD ["./deployment/aws/start_multiservice.sh"]

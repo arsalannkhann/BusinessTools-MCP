@@ -41,39 +41,36 @@ DEPLOYMENT CONFIGURATIONS:
 =========================
 """
 
-import os
-import json
-from datetime import datetime, timedelta
 
 def setup_production_config():
     """Setup production configuration for auto-refresh"""
-    
+
     config = {
         # Environment Detection
         "ENVIRONMENT": "production",  # Enables auto-refresh
-        
+
         # Google OAuth Settings
         "GOOGLE_CREDENTIALS_PATH": "/app/credentials/google_credentials.json",
         "GOOGLE_TOKEN_PATH": "/app/credentials/google_token.json",
-        
+
         # Auto-refresh Settings (optional, has defaults)
         "GOOGLE_REFRESH_INTERVAL": 1800,  # 30 minutes
         "GOOGLE_MIN_TOKEN_LIFETIME": 300,  # 5 minutes
-        
+
         # Backup/Recovery
         "TOKEN_BACKUP_PATH": "/app/backups/tokens/",
         "ENABLE_TOKEN_BACKUP": True,
-        
+
         # Monitoring
         "ENABLE_TOKEN_MONITORING": True,
         "TOKEN_ALERT_WEBHOOK": "https://your-monitoring.com/webhook"
     }
-    
+
     return config
 
 def docker_compose_production():
     """Production Docker Compose configuration"""
-    
+
     compose = {
         "version": "3.8",
         "services": {
@@ -99,12 +96,12 @@ def docker_compose_production():
             }
         }
     }
-    
+
     return compose
 
 def kubernetes_deployment():
     """Kubernetes deployment with token auto-refresh"""
-    
+
     k8s_config = {
         "apiVersion": "apps/v1",
         "kind": "Deployment",
@@ -141,7 +138,7 @@ def kubernetes_deployment():
             }
         }
     }
-    
+
     return k8s_config
 
 # DEPLOYMENT STEPS:
@@ -182,6 +179,6 @@ print("Production deployment guide created!")
 print("Key features:")
 print("✅ Automatic token refresh every 30 minutes")
 print("✅ Background monitoring for production")
-print("✅ Service rebuilding with fresh credentials") 
+print("✅ Service rebuilding with fresh credentials")
 print("✅ Environment-based configuration")
 print("✅ Docker and Kubernetes ready")

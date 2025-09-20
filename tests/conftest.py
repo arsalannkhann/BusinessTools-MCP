@@ -2,12 +2,15 @@
 Pytest configuration and fixtures for Sales MCP Server tests
 """
 
-import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
+
 import aiohttp
-from config.settings import Settings
+import pytest
+
 from config.google_auth import GoogleAuthManager
+from config.settings import Settings
+
 
 @pytest.fixture
 def event_loop():
@@ -20,16 +23,16 @@ def event_loop():
 def mock_settings():
     """Mock settings for testing"""
     settings = MagicMock(spec=Settings)
-    
+
     # Google settings
     settings.google_credentials_path = "test_credentials.json"
     settings.google_token_path = "test_token.json"
     settings.google_scopes = ["https://www.googleapis.com/auth/calendar"]
-    
+
     # Gmail settings
     settings.gmail_email = "test@example.com"
     settings.gmail_app_password = "test_password"
-    
+
     # CRM settings
     settings.hubspot_access_token = "test_hubspot_token"
     settings.salesforce_username = "test@salesforce.com"
@@ -37,7 +40,7 @@ def mock_settings():
     settings.salesforce_security_token = "test_token"
     settings.pipedrive_api_token = "test_pipedrive_token"
     settings.pipedrive_domain = "test-domain"
-    
+
     # Other service settings
     settings.calendly_access_token = "test_calendly_token"
     settings.outreach_access_token = "test_outreach_token"
@@ -47,7 +50,7 @@ def mock_settings():
     settings.slack_bot_token = "test_slack_token"
     settings.zoom_api_key = "test_zoom_key"
     settings.zoom_api_secret = "test_zoom_secret"
-    
+
     return settings
 
 @pytest.fixture
@@ -62,20 +65,20 @@ def mock_google_auth():
 async def mock_http_session():
     """Mock aiohttp session"""
     session = AsyncMock(spec=aiohttp.ClientSession)
-    
+
     # Mock response
     mock_response = AsyncMock()
     mock_response.status = 200
     mock_response.json.return_value = {"success": True, "data": {}}
     mock_response.text.return_value = "Success"
-    
+
     # Mock session methods
     session.get.return_value.__aenter__.return_value = mock_response
     session.post.return_value.__aenter__.return_value = mock_response
     session.put.return_value.__aenter__.return_value = mock_response
     session.patch.return_value.__aenter__.return_value = mock_response
     session.delete.return_value.__aenter__.return_value = mock_response
-    
+
     return session
 
 @pytest.fixture

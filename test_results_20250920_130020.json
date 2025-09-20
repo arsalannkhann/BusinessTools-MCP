@@ -1,0 +1,179 @@
+{
+  "google_calendar": {
+    "tool_name": "google_calendar",
+    "timestamp": "2025-09-20T13:00:16.614458",
+    "tests": [
+      {
+        "action": "list_calendars",
+        "args": {},
+        "success": true,
+        "response": "ToolResult(success=True, data={'calendars': [{'kind': 'calendar#calendarListEntry', 'etag': '\"1757595942025721\"', 'id': 'arsalankhan@orionac.in', 'summary': 'arsalankhan@orionac.in', 'timeZone': 'Asia...",
+        "error": null
+      },
+      {
+        "action": "get_upcoming_events",
+        "args": {
+          "max_results": 5
+        },
+        "success": true,
+        "response": "ToolResult(success=False, data=None, error='Unknown action: get_upcoming_events', metadata=None)",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 2,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "google_meet": {
+    "tool_name": "google_meet",
+    "timestamp": "2025-09-20T13:00:17.104988",
+    "tests": [
+      {
+        "action": "list_upcoming_meetings",
+        "args": {},
+        "success": true,
+        "response": "ToolResult(success=False, data=None, error='Unknown action: list_upcoming_meetings', metadata=None)",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 1,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "gmail": {
+    "tool_name": "gmail",
+    "timestamp": "2025-09-20T13:00:17.105177",
+    "tests": [
+      {
+        "action": "get_profile",
+        "args": {},
+        "success": true,
+        "response": "ToolResult(success=True, data={'email_address': 'arsalankhan@orionac.in', 'messages_total': 43, 'threads_total': 33, 'history_id': '7111'}, error=None, metadata=None)",
+        "error": null
+      },
+      {
+        "action": "list_messages",
+        "args": {
+          "max_results": 5
+        },
+        "success": true,
+        "response": "ToolResult(success=False, data=None, error='Failed to list messages: <HttpError 403 when requesting https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5&includeSpamTrash=false&alt=json...",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 2,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "google_drive": {
+    "tool_name": "google_drive",
+    "timestamp": "2025-09-20T13:00:17.833447",
+    "tests": [
+      {
+        "action": "list_files",
+        "args": {
+          "max_results": 5
+        },
+        "success": true,
+        "response": "ToolResult(success=True, data={'files': [{'parents': ['0AFM9aLLfzICIUk9PVA'], 'owners': [{'displayName': 'Arsalan Khan', 'kind': 'drive#user', 'me': True, 'permissionId': '12218052071349715291', 'emai...",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 1,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "google_sheets": {
+    "tool_name": "google_sheets",
+    "timestamp": "2025-09-20T13:00:18.655716",
+    "tests": [
+      {
+        "action": "list_spreadsheets",
+        "args": {},
+        "success": true,
+        "response": "ToolResult(success=True, data={'spreadsheets': [], 'total': 0, 'next_page_token': None}, error=None, metadata=None)",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 1,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "google_search": {
+    "tool_name": "google_search",
+    "timestamp": "2025-09-20T13:00:19.260734",
+    "tests": [
+      {
+        "action": "search",
+        "args": {
+          "query": "test search",
+          "num_results": 3
+        },
+        "success": true,
+        "response": "ToolResult(success=True, data=[{'title': 'Search Engine Testing & Evaluation - Google Search', 'link': 'https://www.google.com/intl/en_us/search/howsearchworks/how-search-works/rigorous-testing', 'sni...",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 1,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "twilio": {
+    "tool_name": "twilio",
+    "timestamp": "2025-09-20T13:00:19.779682",
+    "tests": [
+      {
+        "action": "get_account_info",
+        "args": {},
+        "success": true,
+        "response": "ToolResult(success=False, data=None, error='Unknown action: get_account_info', metadata=None)",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 1,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "hubspot": {
+    "tool_name": "hubspot",
+    "timestamp": "2025-09-20T13:00:19.779928",
+    "tests": [
+      {
+        "action": "get_account_info",
+        "args": {},
+        "success": true,
+        "response": "ToolResult(success=False, data=None, error='Unknown action: get_account_info', metadata=None)",
+        "error": null
+      },
+      {
+        "action": "search_contacts",
+        "args": {
+          "query": "test",
+          "limit": 5
+        },
+        "success": true,
+        "response": "ToolResult(success=True, data={'contacts': [{'id': '238226049745', 'properties': {'createdate': '2025-09-07T22:24:15.430Z', 'email': 'emailmaria@hubspot.com', 'firstname': 'Maria', 'hs_object_id': '23...",
+        "error": null
+      }
+    ],
+    "summary": {
+      "passed": 2,
+      "failed": 0,
+      "errors": []
+    }
+  }
+}

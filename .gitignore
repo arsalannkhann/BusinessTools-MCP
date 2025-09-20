@@ -28,6 +28,57 @@ env/
 
 # Environment variables
 .env
+.env.local
+.env.development
+.env.production
+
+# Credentials and Tokens
+credentials.json
+credentials/
+token.json
+tokens/
+*.key
+*.pem
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.cache
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# AWS
+.aws/
+aws-exports.js
+
+# Docker
+*.dockerignore
 *.env
 
 # Google OAuth tokens

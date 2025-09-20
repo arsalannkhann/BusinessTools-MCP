@@ -1,0 +1,137 @@
+{
+  "family": "mcp-server-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::{ACCOUNT_ID}:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::{ACCOUNT_ID}:role/mcpServerTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "mcp-server",
+      "image": "{ACCOUNT_ID}.dkr.ecr.{REGION}.amazonaws.com/mcp-server:latest",
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "ENVIRONMENT",
+          "value": "production"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "{REGION}"
+        },
+        {
+          "name": "GOOGLE_CREDENTIALS_PATH",
+          "value": "/app/credentials/google_credentials.json"
+        },
+        {
+          "name": "GOOGLE_TOKEN_PATH",
+          "value": "/app/tokens/google_token.json"
+        },
+        {
+          "name": "GOOGLE_REFRESH_INTERVAL",
+          "value": "1800"
+        },
+        {
+          "name": "GOOGLE_MIN_TOKEN_LIFETIME",
+          "value": "300"
+        },
+        {
+          "name": "PORT",
+          "value": "8000"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "INFO"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "GOOGLE_SEARCH_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:{REGION}:{ACCOUNT_ID}:secret:mcp-server/google-search-api-key"
+        },
+        {
+          "name": "GEMINI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:{REGION}:{ACCOUNT_ID}:secret:mcp-server/gemini-api-key"
+        },
+        {
+          "name": "TWILIO_ACCOUNT_SID",
+          "valueFrom": "arn:aws:secretsmanager:{REGION}:{ACCOUNT_ID}:secret:mcp-server/twilio-account-sid"
+        },
+        {
+          "name": "TWILIO_AUTH_TOKEN",
+          "valueFrom": "arn:aws:secretsmanager:{REGION}:{ACCOUNT_ID}:secret:mcp-server/twilio-auth-token"
+        },
+        {
+          "name": "HUBSPOT_ACCESS_TOKEN",
+          "valueFrom": "arn:aws:secretsmanager:{REGION}:{ACCOUNT_ID}:secret:mcp-server/hubspot-access-token"
+        },
+        {
+          "name": "APOLLO_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:{REGION}:{ACCOUNT_ID}:secret:mcp-server/apollo-api-key"
+        },
+        {
+          "name": "GOOGLE_CREDENTIALS_JSON",
+          "valueFrom": "arn:aws:secretsmanager:{REGION}:{ACCOUNT_ID}:secret:mcp-server/google-credentials"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "efs-tokens",
+          "containerPath": "/app/tokens",
+          "readOnly": false
+        },
+        {
+          "sourceVolume": "efs-logs",
+          "containerPath": "/app/logs",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mcp-server",
+          "awslogs-region": "{REGION}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "python health_check.py || exit 1"],
+        "interval": 60,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 30
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "efs-tokens",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "{EFS_FILE_SYSTEM_ID}",
+        "rootDirectory": "/tokens",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "{EFS_ACCESS_POINT_TOKENS}"
+        }
+      }
+    },
+    {
+      "name": "efs-logs",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "{EFS_FILE_SYSTEM_ID}",
+        "rootDirectory": "/logs",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "{EFS_ACCESS_POINT_LOGS}"
+        }
+      }
+    }
+  ]
+}

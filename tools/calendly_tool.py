@@ -1,25 +1,20 @@
 """Calendly integration tool for scheduling and managing appointments"""
 
-import logging
-import aiohttp
 import asyncio
-from typing import Dict, Any, Optional, List
+from typing import Any
+
+import aiohttp
+from mcp import types
 
 # Import helper functions for Calendly token refresh
-from tools.calendly_helper import (
-    get_valid_access_token, 
-    update_env_file, 
-    initialize_calendly_helper,
-    CalendlyAPIClient,
-    _token_manager
-)
+from tools.calendly_helper import _token_manager, get_valid_access_token, initialize_calendly_helper
 
-import mcp.types as types
 from .base import SalesTool, ToolResult, validate_required_params
+
 
 class CalendlyTool(SalesTool):
     """Calendly scheduling operations"""
-    
+
     def __init__(self):
         super().__init__("calendly", "Calendly scheduling operations for events, invitees, and webhooks")
         self.access_token = None
@@ -30,7 +25,7 @@ class CalendlyTool(SalesTool):
         self.client_secret = None
         self.refresh_token = None
         self._refresh_task = None
-    
+
     async def initialize(self, settings, google_auth=None) -> bool:
         """Initialize Calendly connection and start token refresh background task"""
         # Load credentials from settings
@@ -45,12 +40,12 @@ class CalendlyTool(SalesTool):
                 # Initialize helper and setup token manager
                 await initialize_calendly_helper()
                 _token_manager.client_id = self.client_id
-                _token_manager.client_secret = self.client_secret 
+                _token_manager.client_secret = self.client_secret
                 _token_manager.refresh_token = self.refresh_token
-                
+
                 # Get valid access token (will refresh if needed)
                 self.access_token = await get_valid_access_token()
-                
+
                 if not self.access_token:
                     self.logger.error("Calendly OAuth token refresh failed at initialization")
                     return False
@@ -79,10 +74,9 @@ class CalendlyTool(SalesTool):
                     if self.client_id and self.client_secret and self.refresh_token:
                         self._refresh_task = asyncio.create_task(self._schedule_token_refresh())
                     return True
-                else:
-                    error_data = await resp.text()
-                    self.logger.error(f"Calendly authentication failed: {error_data}")
-                    return False
+                error_data = await resp.text()
+                self.logger.error(f"Calendly authentication failed: {error_data}")
+                return False
         except Exception as e:
             self.logger.error(f"Calendly initialization error: {e}")
             if self.session:
@@ -96,15 +90,15 @@ class CalendlyTool(SalesTool):
             try:
                 await asyncio.sleep(55 * 60)  # 55 minutes
                 self.logger.info("Refreshing Calendly access token...")
-                
+
                 # Use token manager to ensure valid token
                 if await _token_manager.ensure_valid_token():
                     self.access_token = _token_manager.access_token
-                    
+
                     # Update session headers with new token
                     if self.session:
                         self.session._default_headers["Authorization"] = f"Bearer {self.access_token}"
-                    
+
                     self.logger.info("Calendly access token refreshed successfully.")
                 else:
                     self.logger.error("Calendly token refresh failed: Unable to ensure valid token.")
@@ -113,62 +107,60 @@ class CalendlyTool(SalesTool):
                 break
             except Exception as e:
                 self.logger.error(f"Calendly token refresh error: {e}")
-    
+
     def is_configured(self) -> bool:
         """Check if tool is properly configured"""
         return self.access_token is not None and self.session is not None
-    
-    async def execute(self, action: str, params: Dict[str, Any]) -> ToolResult:
+
+    async def execute(self, action: str, params: dict[str, Any]) -> ToolResult:
         """Execute Calendly operations"""
         if not self.is_configured():
             return self._create_error_result("Calendly not configured")
-        
+
         try:
             if action == "get_user":
                 return await self._get_user(params)
-            elif action == "list_event_types":
+            if action == "list_event_types":
                 return await self._list_event_types(params)
-            elif action == "get_event_type":
+            if action == "get_event_type":
                 return await self._get_event_type(params)
-            elif action == "list_scheduled_events":
+            if action == "list_scheduled_events":
                 return await self._list_scheduled_events(params)
-            elif action == "get_scheduled_event":
+            if action == "get_scheduled_event":
                 return await self._get_scheduled_event(params)
-            elif action == "cancel_scheduled_event":
+            if action == "cancel_scheduled_event":
                 return await self._cancel_scheduled_event(params)
-            elif action == "list_invitees":
+            if action == "list_invitees":
                 return await self._list_invitees(params)
-            elif action == "get_invitee":
+            if action == "get_invitee":
                 return await self._get_invitee(params)
-            elif action == "create_webhook":
+            if action == "create_webhook":
                 return await self._create_webhook(params)
-            elif action == "list_webhooks":
+            if action == "list_webhooks":
                 return await self._list_webhooks(params)
-            elif action == "delete_webhook":
+            if action == "delete_webhook":
                 return await self._delete_webhook(params)
-            else:
-                return self._create_error_result(f"Unknown action: {action}")
-        
+            return self._create_error_result(f"Unknown action: {action}")
+
         except Exception as e:
-            self.logger.error(f"Calendly operation failed: {str(e)}")
-            return self._create_error_result(f"Operation failed: {str(e)}")
-    
-    async def _get_user(self, params: Dict[str, Any]) -> ToolResult:
+            self.logger.error(f"Calendly operation failed: {e!s}")
+            return self._create_error_result(f"Operation failed: {e!s}")
+
+    async def _get_user(self, params: dict[str, Any]) -> ToolResult:
         """Get current user information"""
         async with self.session.get(f"{self.base_url}/users/me") as resp:
             if resp.status == 200:
                 result = await resp.json()
                 return self._create_success_result(result["resource"])
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to get user: {error_data}")
-    
-    async def _list_event_types(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to get user: {error_data}")
+
+    async def _list_event_types(self, params: dict[str, Any]) -> ToolResult:
         """List available event types"""
         user = params.get("user", self.user_uri)
-        
+
         async with self.session.get(
-            f"{self.base_url}/event_types", 
+            f"{self.base_url}/event_types",
             params={"user": user}
         ) as resp:
             if resp.status == 200:
@@ -177,38 +169,36 @@ class CalendlyTool(SalesTool):
                     "event_types": result.get("collection", []),
                     "total": len(result.get("collection", []))
                 })
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to list event types: {error_data}")
-    
-    async def _get_event_type(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to list event types: {error_data}")
+
+    async def _get_event_type(self, params: dict[str, Any]) -> ToolResult:
         """Get specific event type"""
         error = validate_required_params(params, ["event_type_uuid"])
         if error:
             return self._create_error_result(error)
-        
+
         event_type_uuid = params["event_type_uuid"]
-        
+
         async with self.session.get(f"{self.base_url}/event_types/{event_type_uuid}") as resp:
             if resp.status == 200:
                 result = await resp.json()
                 return self._create_success_result(result["resource"])
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to get event type: {error_data}")
-    
-    async def _list_scheduled_events(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to get event type: {error_data}")
+
+    async def _list_scheduled_events(self, params: dict[str, Any]) -> ToolResult:
         """List scheduled events"""
         query_params = {
             "user": params.get("user", self.user_uri),
             "count": params.get("count", 20)
         }
-        
+
         # Add optional filters
         for param in ["status", "min_start_time", "max_start_time", "page_token"]:
             if param in params:
                 query_params[param] = params[param]
-        
+
         async with self.session.get(f"{self.base_url}/scheduled_events", params=query_params) as resp:
             if resp.status == 200:
                 result = await resp.json()
@@ -216,35 +206,33 @@ class CalendlyTool(SalesTool):
                     "events": result.get("collection", []),
                     "pagination": result.get("pagination", {})
                 })
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to list events: {error_data}")
-    
-    async def _get_scheduled_event(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to list events: {error_data}")
+
+    async def _get_scheduled_event(self, params: dict[str, Any]) -> ToolResult:
         """Get specific scheduled event"""
         error = validate_required_params(params, ["event_uuid"])
         if error:
             return self._create_error_result(error)
-        
+
         event_uuid = params["event_uuid"]
-        
+
         async with self.session.get(f"{self.base_url}/scheduled_events/{event_uuid}") as resp:
             if resp.status == 200:
                 result = await resp.json()
                 return self._create_success_result(result["resource"])
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to get event: {error_data}")
-    
-    async def _cancel_scheduled_event(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to get event: {error_data}")
+
+    async def _cancel_scheduled_event(self, params: dict[str, Any]) -> ToolResult:
         """Cancel a scheduled event"""
         error = validate_required_params(params, ["event_uuid"])
         if error:
             return self._create_error_result(error)
-        
+
         event_uuid = params["event_uuid"]
         reason = params.get("reason", "Canceled by API")
-        
+
         async with self.session.post(
             f"{self.base_url}/scheduled_events/{event_uuid}/cancellation",
             json={"reason": reason}
@@ -255,26 +243,25 @@ class CalendlyTool(SalesTool):
                     "canceled": True,
                     "cancellation": result["resource"]
                 })
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to cancel event: {error_data}")
-    
-    async def _list_invitees(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to cancel event: {error_data}")
+
+    async def _list_invitees(self, params: dict[str, Any]) -> ToolResult:
         """List invitees for an event"""
         error = validate_required_params(params, ["event_uuid"])
         if error:
             return self._create_error_result(error)
-        
+
         event_uuid = params["event_uuid"]
         query_params = {"count": params.get("count", 20)}
-        
+
         # Add optional filters
         for param in ["email", "status", "page_token"]:
             if param in params:
                 query_params[param] = params[param]
-        
+
         async with self.session.get(
-            f"{self.base_url}/scheduled_events/{event_uuid}/invitees", 
+            f"{self.base_url}/scheduled_events/{event_uuid}/invitees",
             params=query_params
         ) as resp:
             if resp.status == 200:
@@ -283,34 +270,32 @@ class CalendlyTool(SalesTool):
                     "invitees": result.get("collection", []),
                     "pagination": result.get("pagination", {})
                 })
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to list invitees: {error_data}")
-    
-    async def _get_invitee(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to list invitees: {error_data}")
+
+    async def _get_invitee(self, params: dict[str, Any]) -> ToolResult:
         """Get specific invitee"""
         error = validate_required_params(params, ["event_uuid", "invitee_uuid"])
         if error:
             return self._create_error_result(error)
-        
+
         event_uuid = params["event_uuid"]
         invitee_uuid = params["invitee_uuid"]
-        
+
         url = f"{self.base_url}/scheduled_events/{event_uuid}/invitees/{invitee_uuid}"
-        
+
         async with self.session.get(url) as resp:
             if resp.status == 200:
                 result = await resp.json()
                 return self._create_success_result(result["resource"])
-            else:
-                return self._create_error_result(f"Invitee not found: {invitee_uuid}")
-    
-    async def _create_webhook(self, params: Dict[str, Any]) -> ToolResult:
+            return self._create_error_result(f"Invitee not found: {invitee_uuid}")
+
+    async def _create_webhook(self, params: dict[str, Any]) -> ToolResult:
         """Create webhook subscription"""
         error = validate_required_params(params, ["url", "events"])
         if error:
             return self._create_error_result(error)
-        
+
         data = {
             "url": params["url"],
             "events": params["events"],
@@ -318,10 +303,10 @@ class CalendlyTool(SalesTool):
             "user": params.get("user"),
             "scope": params.get("scope", "user")
         }
-        
+
         # Remove None values
         data = {k: v for k, v in data.items() if v is not None}
-        
+
         async with self.session.post(f"{self.base_url}/webhook_subscriptions", json=data) as resp:
             if resp.status == 201:
                 result = await resp.json()
@@ -330,23 +315,22 @@ class CalendlyTool(SalesTool):
                     "webhook": result["resource"],
                     "created": True
                 })
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to create webhook: {error_data}")
-    
-    async def _list_webhooks(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to create webhook: {error_data}")
+
+    async def _list_webhooks(self, params: dict[str, Any]) -> ToolResult:
         """List webhook subscriptions"""
         organization_uri = params.get("organization")
         user_uri = params.get("user", self.user_uri)
         scope = params.get("scope", "user")
-        
+
         query_params = {"scope": scope}
-        
+
         if organization_uri:
             query_params["organization"] = organization_uri
         if user_uri:
             query_params["user"] = user_uri
-        
+
         async with self.session.get(f"{self.base_url}/webhook_subscriptions", params=query_params) as resp:
             if resp.status == 200:
                 result = await resp.json()
@@ -354,28 +338,26 @@ class CalendlyTool(SalesTool):
                     "webhooks": result.get("collection", []),
                     "total": len(result.get("collection", []))
                 })
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to list webhooks: {error_data}")
-    
-    async def _delete_webhook(self, params: Dict[str, Any]) -> ToolResult:
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to list webhooks: {error_data}")
+
+    async def _delete_webhook(self, params: dict[str, Any]) -> ToolResult:
         """Delete webhook subscription"""
         error = validate_required_params(params, ["webhook_uuid"])
         if error:
             return self._create_error_result(error)
-        
+
         webhook_uuid = params["webhook_uuid"]
-        
+
         async with self.session.delete(f"{self.base_url}/webhook_subscriptions/{webhook_uuid}") as resp:
             if resp.status == 204:
                 return self._create_success_result({
                     "deleted": True,
                     "webhook_uuid": webhook_uuid
                 })
-            else:
-                error_data = await resp.text()
-                return self._create_error_result(f"Failed to delete webhook: {error_data}")
-    
+            error_data = await resp.text()
+            return self._create_error_result(f"Failed to delete webhook: {error_data}")
+
     def get_mcp_tool_definition(self) -> types.Tool:
         """Get MCP tool definition"""
         return types.Tool(
@@ -415,7 +397,7 @@ class CalendlyTool(SalesTool):
                 "required": ["action"]
             }
         )
-    
+
     async def cleanup(self):
         """Clean up resources and cancel token refresh task"""
         if self._refresh_task:

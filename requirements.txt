@@ -1,32 +1,40 @@
-# Sales MCP Server Dependencies
-mcp
-# Core dependencies
-aiohttp
-pydantic
-python-dotenv
-flask
-flask-cors
+# Sales MCP Server - Core Dependencies
 
-# Google API dependencies
-google-api-python-client
-google-auth
-google-auth-httplib2
-google-auth-oauthlib
-requests
+# Model Context Protocol
+mcp>=1.0.0
 
-# Payment processing
-stripe
+# Core Web Framework
+aiohttp>=3.9.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
 
-# AI Integration
-orionac_ai
+# Google Services Integration
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-httplib2>=0.1.1
+google-auth-oauthlib>=1.1.0
 
-# Scheduling and time management
-pytz
-python-dateutil
-mcp
-# Development tools
-black==23.7.0
-isort==5.12.0
-pylint==2.17.5
+# HTTP Requests & API Clients
+requests>=2.31.0
+httpx>=0.25.0
+
+# Payment Processing
+stripe>=7.0.0
+
+# Time & Date Management
+pytz>=2023.3
+python-dateutil>=2.8.2
+
+# Data Processing & Utilities
+pandas>=2.1.0
+openpyxl>=3.1.2
+
+# Development & Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+mypy>=1.0.0
+ruff>=0.1.0
+black>=23.7.0
+isort>=5.12.0
 twilio
 pytest

@@ -558,7 +558,7 @@
             log(`Testing tool: ${toolName}`);
             
             try {
-                const response = await fetch(`/api/test/tool/${toolName}`, {
+                const response = await fetch(`/api/tool/${toolName}/execute`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -792,7 +792,7 @@
             resultDiv.innerHTML = '<div style="text-align: center; padding: 1rem;"><div class="spinner"></div><p>Executing...</p></div>';
             
             try {
-                const response = await fetch(`/api/execute/tool/${window.currentToolName}`, {
+                const response = await fetch(`/api/tool/${window.currentToolName}/execute`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

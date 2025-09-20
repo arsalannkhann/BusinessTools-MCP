@@ -84,7 +84,7 @@ aws-exports.js
 # Google OAuth tokens
 token.json
 credentials.json
-
+tts.json
 # IDE
 .vscode/
 .idea/
